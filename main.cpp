@@ -17,7 +17,7 @@ void syntax();
 
 int main(int argc, char **argv)
 {
-  if(argc != 4) 
+  if(argc != 5) 
   {
     syntax();
     exit(-1);
@@ -26,12 +26,16 @@ int main(int argc, char **argv)
   Mat original_image = imread(argv[1]);
   int k = atoi(argv[2]);
   int m = atoi(argv[3]);
+  int threshold = atoi(argv[4]);
 
   Slic *s = new Slic();
   s->init(original_image, k, m);
 
   // iterate
-  s->iterate_superpixels();
+  for(int i = 0; i < threshold; i++) 
+  {
+    s->iterate_superpixels();
+  }
 
   // Show original
   namedWindow("original");
@@ -92,6 +96,6 @@ int main(int argc, char **argv)
 
 void syntax()
 {
-  cout << "Syntax: slic [image_file] [super_pixel_size] [m]" << endl;
+  cout << "Syntax: slic [image_file] [super_pixel_size] [m] [threshold]" << endl;
 }
 
