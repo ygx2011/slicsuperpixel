@@ -66,15 +66,15 @@ int main(int argc, char **argv)
     );
   }
 
-  for(int i = 0; i < s->get_superpixels().size(); i++)
-  {
-    printf("Neighbors for %d:\n", i);
-    vector<superpixel> neighbors = s->get_superpixel_neighbors_and_self(i);
-    for(int j = 0; j < neighbors.size(); j++)
-    {
-      printf("%d\n", neighbors.at(j).id);
-    }
-  }
+  // for(int i = 0; i < s->get_superpixels().size(); i++)
+  // {
+  //   printf("Neighbors for %d:\n", i);
+  //   vector<superpixel> neighbors = s->get_superpixel_neighbors_and_self(i);
+  //   for(int j = 0; j < neighbors.size(); j++)
+  //   {
+  //     printf("%d\n", neighbors.at(j).id);
+  //   }
+  // }
 
 
   // Show centers

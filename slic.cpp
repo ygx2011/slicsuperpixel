@@ -124,22 +124,33 @@ void Slic::iterate()
     for(int j = 0; j < current_superpixel.points.size(); j++)
     {
       Point current_point = current_superpixel.points.at(j);
-      superpixel lowest_superpixel = sps.at(0);
+      superpixel lowest_superpixel = current_superpixel;
+      float lowest_d = slic_distance(current_point, current_superpixel.center);
+      int lowest_id = current_superpixel.id;
+
+      // Loop through each neighbor and check which the current_pixel belongs to
       for(int c = 0; c < sps.size(); c++)
       {
         float d = slic_distance(current_point, sps.at(c).center);
-        cout << "Distance: P(" 
-              << current_point.x << ", " << current_point.y
-              << ") and P("
-              << sps.at(c).center.x << ", " << sps.at(c).center.y << "): "
-              << d << endl;
+        if(d <= lowest_d)
+        {
+          lowest_d = d;
+          lowest_id = sps.at(c).id;
+          lowest_superpixel = sps.at(c);
+        }
       }
+
+      new_superpixels.at(lowest_id).points.push_back(current_point);
     }
   }
   
 
   // Replace the current superpixel set
-  //this->superpixels = new_superpixels;
+  this->superpixels = new_superpixels;
+
+  // Recompute means
+
+  // Enforce connectivity
 }
 
 float Slic::slic_distance(Point p1, Point p2)
@@ -304,4 +315,15 @@ vector<factor_pair> Slic::factor_pairs(int k)
   }
 
   return ret;
+}
+
+// Recommended by rafajafar (opencv IRC)
+Vec3i Slic::range_lab_values(Vec3b lab)
+{
+  Vec3i n_lab;
+  n_lab[0] = (lab[0] * 100) / 255;
+  n_lab[1] = lab[1] - 128;
+  n_lab[2] = lab[2] - 128;
+
+  return n_lab;
 }

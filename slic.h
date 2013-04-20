@@ -53,6 +53,8 @@ public:
   void init(Mat original_image, int k);
   float slic_distance(Point p1, Point p2);
 
+  Vec3i range_lab_values(Vec3b lab);
+
   void iterate();
 
   Slic();
