@@ -50,12 +50,12 @@ public:
   int get_k();
   void set_k(int k);
 
-  void init(Mat original_image, int k);
+  void init(Mat original_image, int k, float m);
   float slic_distance(Point p1, Point p2);
 
   Vec3i range_lab_values(Vec3b lab);
 
-  void iterate();
+  void iterate_superpixels();
 
   Slic();
   virtual ~Slic();
@@ -65,6 +65,8 @@ public:
   vector<superpixel> get_superpixel_neighbors_and_self(int i);
   int width;
   int length;
+  float m;
+  float S;
 
 private:
   Mat original_image;

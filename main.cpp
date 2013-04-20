@@ -17,7 +17,7 @@ void syntax();
 
 int main(int argc, char **argv)
 {
-  if(argc != 3) 
+  if(argc != 4) 
   {
     syntax();
     exit(-1);
@@ -25,12 +25,13 @@ int main(int argc, char **argv)
 
   Mat original_image = imread(argv[1]);
   int k = atoi(argv[2]);
+  int m = atoi(argv[3]);
 
   Slic *s = new Slic();
-  s->init(original_image, k);
+  s->init(original_image, k, m);
 
   // iterate
-  s->iterate();
+  s->iterate_superpixels();
 
   // Show original
   namedWindow("original");
@@ -57,13 +58,13 @@ int main(int argc, char **argv)
         1);
     }
 
-    line(
-      image,
-      superpixels.at(i).center,
-      superpixels.at(i).center,
-      Scalar(255, 0, 0),
-      5
-    );
+    // line(
+    //   image,
+    //   superpixels.at(i).center,
+    //   superpixels.at(i).center,
+    //   Scalar(255, 0, 0),
+    //   5
+    // );
   }
 
   // for(int i = 0; i < s->get_superpixels().size(); i++)
@@ -76,6 +77,9 @@ int main(int argc, char **argv)
   //   }
   // }
 
+  cout << "Num superpixels: " << s->get_superpixels().size() << endl;
+  cout << "S: " << s->S << endl;
+  cout << "m: " << s->m << endl;
 
   // Show centers
   namedWindow("centers");
@@ -88,6 +92,6 @@ int main(int argc, char **argv)
 
 void syntax()
 {
-  cout << "Syntax: slic [image_file] [super_pixel_size]" << endl;
+  cout << "Syntax: slic [image_file] [super_pixel_size] [m]" << endl;
 }
 

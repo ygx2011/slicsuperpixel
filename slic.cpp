@@ -3,7 +3,7 @@
 /**
  * TODO: Need proper handling if init fail
  */
-void Slic::init(Mat original_image, int k)
+void Slic::init(Mat original_image, int k, float m)
 {
   int width = original_image.cols;
   int length = original_image.rows;
@@ -107,26 +107,38 @@ void Slic::init(Mat original_image, int k)
       }
     }
   }
+
+
+
+  this->m = m;
+  this->S = (float)(sqrt(this->get_original_image().rows * this->get_original_image().cols / this->superpixels.size()));
 }
 
-void Slic::iterate()
+void Slic::iterate_superpixels()
 {
   // Create new superpixel buffer with same size as current
   vector<superpixel> new_superpixels(this->superpixels.size());
+
+  // Reinstantiate parameters for buffer
+  for(int i = 0; i < new_superpixels.size(); i++)
+  {
+    new_superpixels.at(i).id = i;
+    new_superpixels.at(i).center = this->superpixels.at(i).center;
+  }
 
   // Iterate through each superpixel
   for(int i = 0; i < this->superpixels.size(); i++)
   {
     vector<superpixel> sps = get_superpixel_neighbors_and_self(i);
     superpixel current_superpixel = this->superpixels.at(i);
+    superpixel lowest_superpixel = current_superpixel;
 
     // loop through each pixel of the current superpixel
     for(int j = 0; j < current_superpixel.points.size(); j++)
     {
       Point current_point = current_superpixel.points.at(j);
-      superpixel lowest_superpixel = current_superpixel;
-      float lowest_d = slic_distance(current_point, current_superpixel.center);
-      int lowest_id = current_superpixel.id;
+      float lowest_d = slic_distance(current_point, lowest_superpixel.center);
+      int lowest_id = lowest_superpixel.id;
 
       // Loop through each neighbor and check which the current_pixel belongs to
       for(int c = 0; c < sps.size(); c++)
@@ -140,6 +152,7 @@ void Slic::iterate()
         }
       }
 
+      // Assign the current_point to the cluster with the lowest distance.
       new_superpixels.at(lowest_id).points.push_back(current_point);
     }
   }
@@ -157,8 +170,10 @@ float Slic::slic_distance(Point p1, Point p2)
 {
   Mat lab = this->lab_image;
   float ret = 0;
-  float S = this->superpixel_width;
-  float m = 10;
+
+  // S = N/K
+  float S = this->S;
+  float m = this->m;
 
   float p1_l = lab.at<Vec3b>(p1.y, p1.x)[0];
   float p1_a = lab.at<Vec3b>(p1.y, p1.x)[1];
