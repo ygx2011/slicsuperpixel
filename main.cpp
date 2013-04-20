@@ -81,6 +81,7 @@ int main(int argc, char **argv)
   //   }
   // }
 
+  cout << "Resoltion: " << s->width << " x " << s->length << endl;
   cout << "Num superpixels: " << s->get_superpixels().size() << endl;
   cout << "S: " << s->S << endl;
   cout << "m: " << s->m << endl;

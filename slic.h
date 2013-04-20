@@ -56,6 +56,7 @@ public:
   Vec3i range_lab_values(Vec3b lab);
 
   void iterate_superpixels();
+  void enforce_connectivity();
 
   Slic();
   virtual ~Slic();

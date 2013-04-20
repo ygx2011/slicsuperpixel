@@ -156,19 +156,12 @@ void Slic::iterate_superpixels()
       new_superpixels.at(lowest_id).points.push_back(current_point);
     }
   }
-  
-  // Reassign old centers
-  // Hack just to get the old centers
-  for(int i = 0; i < this->superpixels.size(); i++)
-  {
-    new_superpixels.at(i).center = this->superpixels.at(i).center;
-  }
 
   // Replace the current superpixel set
   this->superpixels = new_superpixels;
 
   // Recompute means
-  // TODO: Not sure if this is correct. Paper states average of labxy.
+  // TODO: Not sure if this is correct. Paper states average of labxy. Just getting the average x,y for new center
   for(int i = 0; i < this->superpixels.size(); i++)
   {
     float mean_x = 0;
@@ -189,8 +182,12 @@ void Slic::iterate_superpixels()
       this->superpixels.at(i).center = new_center;
     }
   }
+}
 
-  // Enforce connectivity
+// TODO: Implement this
+void Slic::enforce_connectivity()
+{
+
 }
 
 float Slic::slic_distance(Point p1, Point p2)
