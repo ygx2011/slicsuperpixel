@@ -1,245 +1,222 @@
 #include "slic.h"
 
-/**
- * TODO: Need proper handling if init fail
- */
-void Slic::init(Mat original_image, int k, float m)
+void Slic::init(Mat originalImage, int s, float m)
 {
-  int width = original_image.cols;
-  int length = original_image.rows;
+  // TODO: Assert valid s
+  CV_Assert(originalImage.cols % s == 0);
+  CV_Assert(originalImage.rows % s == 0);
 
-  // Check if we can generate k number of regularly shaped superpixels.
-  // If not, we crop the extra to fit the desired k.
-  vector<factor_pair> fps = factor_pairs(k);
-  int fx = fps.back().x;
-  int fy = fps.back().y;
+  this->width = originalImage.cols;
+  this->height = originalImage.rows;
+  this->originalImage = originalImage;
 
-  int width_size = width / fx;
-  int length_size = length / fy;
+  this->S = (float)s;
+  this->m = m;
 
-  this->superpixel_width = width_size;
-  this->superpixel_length = length_size;
-
-  int ir_width_size = 0;
-  if(width % width_size != 0)
-  {
-    ir_width_size = width - (width_size * (fx - 1));
-  }
-
-  int ir_length_size = 0;
-  if(length % length_size != 0)
-  {
-    ir_length_size = length - (length_size * (fy - 1));
-  }
-
-  if(ir_width_size > 0 || ir_length_size > 0)
-  {
-    Rect roi(0, 0, width - (ir_width_size), length - (ir_length_size));
-    Mat cropped_image = original_image(roi);
-    this->set_original_image(cropped_image);
-  }
+  this->superpixelRowCount = this->height / s;
+  this->superpixelColCount = this->width / s;
 
   // Setup the image in lab color space
-  Mat lab_image;
-  cvtColor(this->get_original_image(), lab_image, CV_BGR2Lab);
-  this->set_lab_image(lab_image);
+  cvtColor(originalImage, this->labImage, CV_BGR2Lab);
+  
+  // Setup the gradient image based on labImage
+  this->gradientImage = this->convertToGradient(this->labImage);
 
-  // Setup the gradient image based on lab_image
-  Mat gradient_image = this->convert_to_gradient(lab_image);
-  this->gradient_image = gradient_image;
-
-  // Make sure we have the updated width and length
-  width = lab_image.cols;
-  length = lab_image.rows;
-  this->width = width;
-  this->length = length;
-
-  // Initialize superpixels into equal regions
-  // Get superpixel_row_count and superpixel_col_count
-  vector<superpixel> superpixels;
-  superpixel_col_count = 0;
-  superpixel_row_count = 0;
   int superpixel_counter = 0;
-  for(int x_counter = 0; x_counter < width; x_counter +=  width_size)
+  for(int y_counter = 0; y_counter < height; y_counter += s)
   {
-    for(int y_counter = 0; y_counter < length; y_counter += length_size)
+    for(int x_counter = 0; x_counter < width; x_counter += s)
     {
       superpixel sp;
-      for(int x = x_counter; x < x_counter + (width_size); x++)
+      
+      int lowest_gradient = 100000;
+      
+      for(int x = x_counter; x < x_counter + (s); x++)
       {
-        for(int y = y_counter; y < y_counter + (length_size); y++)
+        for(int y = y_counter; y < y_counter + (s); y++)
         {
           Point p(x, y);
           sp.points.push_back(p);
+          if((int)this->gradientImage.at<uchar>(p.y, p.x) < lowest_gradient)
+          {
+            sp.center = Point(p.x, p.y);
+            lowest_gradient = (int)this->gradientImage.at<uchar>(p.y, p.x);
+          }
         }
       }
+
+      // Get center point value
+      sp.center_point_value = getLabxy(labImage, sp.center);
+
       sp.id = superpixel_counter; 
+
       superpixels.push_back(sp);
       superpixel_counter++;
     }
-    superpixel_col_count++;
   }
-  superpixel_row_count = superpixels.size() / superpixel_col_count;
-  this->superpixel_row_count = superpixel_row_count;
-  this->superpixel_col_count = superpixel_col_count;
 
   this->superpixels = superpixels;
-
-  // Initialize center for each superpixel based on lowest gradient value
-  for(int i = 0; i < superpixels.size(); i++)
-  {
-    superpixel sp = superpixels.at(i);
-    vector<Point> sp_points = sp.points;
-    vector<int> g_points;
-    for(int j = 0; j < sp.points.size(); j++)
-    {
-      int g = (int)this->gradient_image.at<uchar>(sp_points.at(j).y, sp_points.at(j).x);
-      g_points.push_back(g);
-    }
-
-    sort(g_points.begin(), g_points.end());
-    for(int j = 0; j < sp.points.size(); j++)
-    {
-      int g = (int)this->gradient_image.at<uchar>(sp_points.at(j).y, sp_points.at(j).x);
-      if(g == g_points.at(0))
-      {
-        this->superpixels.at(i).center = sp_points.at(j);
-      }
-    }
-  }
-
-
-
-  this->m = m;
-  this->S = (float)(sqrt(this->get_original_image().rows * this->get_original_image().cols / this->superpixels.size()));
 }
 
-void Slic::iterate_superpixels()
+float Slic::iterate()
 {
-  // Create new superpixel buffer with same size as current
   vector<superpixel> new_superpixels(this->superpixels.size());
+  int num_superpixels = new_superpixels.size();
 
-  // Reinstantiate parameters for buffer
-  for(int i = 0; i < new_superpixels.size(); i++)
+  // Update IDs.
+  for(int sp_counter = 0; sp_counter < num_superpixels; sp_counter++)
   {
-    new_superpixels.at(i).id = i;
-    new_superpixels.at(i).center = this->superpixels.at(i).center;
+    new_superpixels.at(sp_counter).id = this->superpixels.at(sp_counter).id;
+    new_superpixels.at(sp_counter).center = this->superpixels.at(sp_counter).center;
   }
 
-  // Iterate through each superpixel
-  for(int i = 0; i < this->superpixels.size(); i++)
+  for(int sp_counter = 0; sp_counter < num_superpixels; sp_counter++)
   {
-    vector<superpixel> sps = get_superpixel_neighbors_and_self(i);
-    superpixel current_superpixel = this->superpixels.at(i);
-    superpixel lowest_superpixel = current_superpixel;
+    superpixel current_sp = this->superpixels.at(sp_counter);
 
-    // loop through each pixel of the current superpixel
-    for(int j = 0; j < current_superpixel.points.size(); j++)
+    vector<superpixel> current_sp_neighbors = getSuperpixelNeighborsAndSelf(current_sp.id);
+    int num_neighbors = current_sp_neighbors.size();
+
+    vector<Point> test_points = current_sp.points;
+    int num_test_points = test_points.size();
+
+    for(int tp_counter = 0; tp_counter < num_test_points; tp_counter++)
     {
-      Point current_point = current_superpixel.points.at(j);
-      float lowest_d = slic_distance(current_point, lowest_superpixel.center);
-      int lowest_id = lowest_superpixel.id;
+      Point current_point = test_points.at(tp_counter);
+      vector<float> current_point_value = getLabxy(this->labImage, current_point);
 
-      // Loop through each neighbor and check which the current_pixel belongs to
-      for(int c = 0; c < sps.size(); c++)
+      superpixel lowest_sp = current_sp;
+      float lowest_distance = slicDistance(current_point_value, lowest_sp.center_point_value);
+      int lowest_id = lowest_sp.id;
+
+      for(int j = 0; j < num_neighbors; j++)
       {
-        float d = slic_distance(current_point, sps.at(c).center);
-        if(d <= lowest_d)
+        float d = slicDistance(current_point_value, current_sp_neighbors.at(j).center_point_value);
+
+        if(d < lowest_distance)
         {
-          lowest_d = d;
-          lowest_id = sps.at(c).id;
-          lowest_superpixel = sps.at(c);
+          lowest_distance = d;
+          lowest_sp = current_sp_neighbors.at(j);
+          lowest_id = current_sp_neighbors.at(j).id;
         }
       }
 
-      // Assign the current_point to the cluster with the lowest distance.
       new_superpixels.at(lowest_id).points.push_back(current_point);
     }
   }
 
-  // Replace the current superpixel set
-  this->superpixels = new_superpixels;
+  // Recompute centers and error
+  float residual_error = 0;
 
-  // Recompute means
-  // TODO: Not sure if this is correct. Paper states average of labxy. Just getting the average x,y for new center
-  for(int i = 0; i < this->superpixels.size(); i++)
+  for(int i = 0; i < num_superpixels; i++)
   {
+    float mean_l = 0;
+    float mean_a = 0;
+    float mean_b = 0;
     float mean_x = 0;
     float mean_y = 0;
 
-    for(int j = 0; j < this->superpixels.at(i).points.size(); j++)
+    superpixel s = new_superpixels.at(i);
+    int previous_x = s.center.x;
+    int previous_y = s.center.y;
+    vector<Point> s_points = s.points;
+    int s_size = s.points.size();
+
+    for(int j = 0; j < s_size; j++)
     {
-      mean_x += this->superpixels.at(i).points.at(j).x;
-      mean_y += this->superpixels.at(i).points.at(j).y;
+      mean_l += this->labImage.at<Vec3b>(s_points.at(j).y, s_points.at(j).x)[0];
+      mean_a += this->labImage.at<Vec3b>(s_points.at(j).y, s_points.at(j).x)[1];
+      mean_b += this->labImage.at<Vec3b>(s_points.at(j).y, s_points.at(j).x)[2];
+      mean_x += s_points.at(j).x;
+      mean_y += s_points.at(j).y;
     }
 
-    mean_x = (int)(mean_x / this->superpixels.at(i).points.size());
-    mean_y = (int)(mean_y / this->superpixels.at(i).points.size());
+    mean_l = (mean_l / s_size);
+    mean_a = (mean_a / s_size);
+    mean_b = (mean_b / s_size);
+    mean_x = (mean_x / s_size);
+    mean_y = (mean_y / s_size);
+
+    vector<float> center_point_value;
+    center_point_value.push_back(mean_l);
+    center_point_value.push_back(mean_a);
+    center_point_value.push_back(mean_b);
+    center_point_value.push_back(mean_x);
+    center_point_value.push_back(mean_y);
 
     if(mean_x >= 0 || mean_y >= 0)
     {
-      Point new_center(mean_x, mean_y);
-      this->superpixels.at(i).center = new_center;
+      Point new_center((int)mean_x, (int)mean_y);
+      new_superpixels.at(i).center = new_center;
+      new_superpixels.at(i).center_point_value = center_point_value;
     }
+
+    residual_error += std::abs(previous_x - new_superpixels.at(i).center.x) + std::abs(previous_y - new_superpixels.at(i).center.y); 
   }
+
+  this->superpixels = new_superpixels;
+
+  return residual_error / new_superpixels.size();
 }
 
 // TODO: Implement this
-void Slic::enforce_connectivity()
+void Slic::enforceConnectivity()
 {
 
 }
 
-float Slic::slic_distance(Point p1, Point p2)
+float Slic::slicDistance(vector<float> a, vector<float> b)
 {
-  Mat lab = this->lab_image;
-  float ret = 0;
+  float d = 0;
 
-  // S = N/K
   float S = this->S;
   float m = this->m;
 
-  float p1_l = lab.at<Vec3b>(p1.y, p1.x)[0];
-  float p1_a = lab.at<Vec3b>(p1.y, p1.x)[1];
-  float p1_b = lab.at<Vec3b>(p1.y, p1.x)[2];
+  float d_lab = sqrt(pow((a.at(0) - b.at(0)), 2) + pow((a.at(1) - b.at(1)),2) + pow((a.at(2) - b.at(2)),2));
+  float d_xy = sqrt(pow((a.at(3) - b.at(3)),2) + pow((a.at(4) - b.at(4)), 2));
 
-  float p2_l = lab.at<Vec3b>(p2.y, p2.x)[0];
-  float p2_a = lab.at<Vec3b>(p2.y, p2.x)[1];
-  float p2_b = lab.at<Vec3b>(p2.y, p2.x)[2];
+  d = d_lab + ((m / S) * d_xy);
 
-  float d_lab = sqrt(pow(p1_l - p2_l, 2) + pow(p1_a - p2_a, 2) + pow(p1_b - p2_b, 2));
-  float d_xy = sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2));
-
-  ret = d_lab + ((m / S) * d_xy);
-
-  return ret;
+  return d;
 }
 
-vector<superpixel> Slic::get_superpixel_neighbors_and_self(int index)
+
+vector<superpixel> Slic::getSuperpixelNeighborsAndSelf(int index)
 {
   vector<superpixel> ret;
   superpixel s = this->superpixels.at(index);
   ret.push_back(s);
 
   // Get top
-  if((index - this->superpixel_col_count) >= 0)
+  if((index - this->superpixelColCount) >= 0)
   {
-    s = this->superpixels.at(index - this->superpixel_col_count);
+    s = this->superpixels.at(index - this->superpixelColCount);
     ret.push_back(s);
   }
 
-  
-  int v_center = index - ((int)(index / this->superpixel_col_count) * 2);
-  int v_right = index - ((int)((index + 1) / this->superpixel_col_count) * 2);
-  int v_left = index - ((int)((index - 1) / this->superpixel_col_count) * 2);
-
-  // printf("v_center: %d, v_right: %d, v_left: %d\n", v_center, v_right, v_left);
+  int v_center = index - ((int)(index / this->superpixelColCount) * 2);
+  int v_right = index - ((int)((index + 1) / this->superpixelColCount) * 2);
+  int v_left = index - ((int)((index - 1) / this->superpixelColCount) * 2);
 
   // Get left
   if(v_center >= v_left && index != 0)
   {
     s = this->superpixels.at(index - 1);
     ret.push_back(s);
+
+    // Get top left
+    int left_id = index - 1;
+    if((left_id - this->superpixelColCount) >= 0) {
+      s = this->superpixels.at(left_id - this->superpixelColCount);
+      ret.push_back(s);
+    }
+
+    // Get bottom left
+    if((left_id + this->superpixelColCount) <= (this->superpixels.size() - 1))
+    {
+      s = this->superpixels.at(left_id + this->superpixelColCount);
+      ret.push_back(s);
+    }
   }
 
   // Get right
@@ -247,28 +224,44 @@ vector<superpixel> Slic::get_superpixel_neighbors_and_self(int index)
   {
     s = this->superpixels.at(index + 1);
     ret.push_back(s);
+
+    // Get top right
+    int right_id = index + 1;
+    if((right_id - this->superpixelColCount) >= 0) {
+      s = this->superpixels.at(right_id - this->superpixelColCount);
+      ret.push_back(s);
+    }
+
+    // Get bottom right
+    if((right_id + this->superpixelColCount) <= (this->superpixels.size() - 1))
+    {
+      s = this->superpixels.at(right_id + this->superpixelColCount);
+      ret.push_back(s);
+    }
   }
 
   // Get bottom
-  if((index + this->superpixel_col_count) <= (this->superpixels.size() - 1))
+  if((index + this->superpixelColCount) <= (this->superpixels.size() - 1))
   {
-    s = this->superpixels.at(index + this->superpixel_col_count);
+    s = this->superpixels.at(index + this->superpixelColCount);
     ret.push_back(s);
   }
+
+  //printf("v_center: %d, v_right: %d, v_left: %d\n", v_center, v_right, v_left);
 
   return ret;
 }
 
-Mat Slic::convert_to_gradient(Mat original_image)
+Mat Slic::convertToGradient(Mat originalImage)
 {
-  if(original_image.channels() > 0)
+  if(originalImage.channels() > 0)
   {
-    cvtColor(original_image, original_image, CV_BGR2GRAY);
+    cvtColor(originalImage, originalImage, CV_BGR2GRAY);
   }
   Mat result_image;
 
   // Equalize histogram 
-  equalizeHist(original_image, result_image);
+  equalizeHist(originalImage, result_image);
 
   // Gaussian blur
   // GaussianBlur(src, dst, Size(x, y), ox, oy)
@@ -291,73 +284,65 @@ Mat Slic::convert_to_gradient(Mat original_image)
   return result_image;
 }
 
-Slic::Slic()
+Slic::Slic(Mat original_image, int s, float m)
 {
+  this->init(original_image, s, m);
 }
 
 Slic::~Slic()
 {
 }
 
-Mat Slic::get_original_image()
+Mat Slic::getOriginalImage()
 {
-  return this->original_image;
+  return this->originalImage;
 }
 
-void Slic::set_original_image(Mat original_image)
-{
-  this->original_image = original_image;
-}
 
-vector<superpixel> Slic::get_superpixels()
+vector<superpixel> Slic::getSuperpixels()
 {
   return this->superpixels;
 }
 
-Mat Slic::get_lab_image()
+Mat Slic::getLabImage()
 {
-  return this->lab_image;
+  return this->labImage;
 }
 
-void Slic::set_lab_image(Mat lab_image)
+
+Mat Slic::getGradientImage()
 {
-  this->lab_image = lab_image;
+  return this->gradientImage;
 }
 
-Mat Slic::get_gradient_image()
-{
-  return this->gradient_image;
-}
-
-int Slic::get_k()
+int Slic::getK()
 {
   return this->k;
 }
 
-void Slic::set_k(int k)
+int Slic::getHeight()
 {
-  this->k = k;
+  return this->height;
 }
 
-vector<factor_pair> Slic::factor_pairs(int k)
+int Slic::getWidth()
 {
-  vector<factor_pair> ret;
-  for(int i = 1; i <= ((int)sqrt(k)); i++)
-  {
-    if(k % i == 0)
-    {
-      factor_pair p;
-      p.x = i;
-      p.y = k / i;
-      ret.push_back(p);
-    }
-  }
-
-  return ret;
+  return this->width;
 }
+
+int Slic::getM()
+{
+  return this->m;
+}
+
+int Slic::getS()
+{
+  return this->S;
+}
+
 
 // Recommended by rafajafar (opencv IRC)
-Vec3i Slic::range_lab_values(Vec3b lab)
+Vec3i Slic::rangeLabValues(Vec3b lab)
 {
   Vec3i n_lab;
   n_lab[0] = (lab[0] * 100) / 255;
@@ -365,4 +350,85 @@ Vec3i Slic::range_lab_values(Vec3b lab)
   n_lab[2] = lab[2] - 128;
 
   return n_lab;
+}
+
+
+vector<float> Slic::getLabxy(Mat lab, Point c)
+{
+  vector<float> ret;
+  float l = lab.at<Vec3b>(c.y, c.x)[0];
+  float a = lab.at<Vec3b>(c.y, c.x)[1];
+  float b = lab.at<Vec3b>(c.y, c.x)[2];
+  float x = (float)c.x;
+  float y = (float)c.y;
+  ret.push_back(l);
+  ret.push_back(a);
+  ret.push_back(b);
+  ret.push_back(x);
+  ret.push_back(y);
+
+  return ret;
+}
+
+Mat Slic::getSIFTDescriptors()
+{
+  Mat descriptors;
+  vector<KeyPoint> keypoints;
+
+  vector<superpixel> superpixels = this->superpixels;
+
+  for(int i = 0; i < superpixels.size(); i++)
+  {
+    superpixel sp = superpixels.at(i);
+    KeyPoint kp(sp.center, 8);
+    keypoints.push_back(kp);
+  }
+
+  SiftDescriptorExtractor extractor;
+
+  extractor.compute(this->originalImage, keypoints, descriptors);
+
+  return descriptors;
+}
+
+Mat Slic::getSurfDescriptors()
+{
+  Mat descriptors;
+  vector<KeyPoint> keypoints;
+
+  vector<superpixel> superpixels = this->superpixels;
+
+  for(int i = 0; i < superpixels.size(); i++)
+  {
+    superpixel sp = superpixels.at(i);
+    KeyPoint kp(sp.center, 8);
+    keypoints.push_back(kp);
+  }
+
+  SurfDescriptorExtractor extractor;
+
+  extractor.compute(this->originalImage, keypoints, descriptors);
+
+  return descriptors;
+}
+
+Mat Slic::getOrbDescriptors()
+{
+  Mat descriptors;
+  vector<KeyPoint> keypoints;
+
+  vector<superpixel> superpixels = this->superpixels;
+
+  for(int i = 0; i < superpixels.size(); i++)
+  {
+    superpixel sp = superpixels.at(i);
+    KeyPoint kp(sp.center, 8);
+    keypoints.push_back(kp);
+  }
+
+  OrbDescriptorExtractor extractor;
+
+  extractor.compute(this->originalImage, keypoints, descriptors);
+
+  return descriptors;
 }

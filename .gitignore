@@ -1,3 +1,5 @@
 # Ignore object files
 *.o
 slic
+*.jpg
+*.swp
