@@ -7,7 +7,7 @@ program_CXX_OBJS := ${program_CXX_SRCS:.cpp=.o}
 program_OBJS := $(program_C_OBJS) $(program_CXX_OBJS)
 program_INCLUDE_DIRS := /usr/local/include
 program_LIBRARY_DIRS := /usr/local/lib
-program_LIBRARIES := opencv_core opencv_highgui opencv_imgproc opencv_features2d opencv_nonfree
+program_LIBRARIES := opencv_core opencv_highgui opencv_imgproc opencv_features2d opencv_nonfree opencv_ml
 
 CPPFLAGS += $(foreach includedir,$(program_INCLUDE_DIRS), -I$(includedir))
 LDFLAGS += $(foreach librarydir, $(program_LIBRARY_DIRS), -L$(librarydir))
