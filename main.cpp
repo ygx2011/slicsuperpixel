@@ -178,7 +178,7 @@ void mouse_event(int e, int x, int y, int flags, void *param)
     imshow("Contours", contours);
 
     // Print out descriptors
-    for(int i = 0; i < descriptors.rows; i++)
+    for(int i = 0; i < descriptors.cols; i++)
     {
       data_file << descriptors.at<float>(l, i) << ",";
     }
