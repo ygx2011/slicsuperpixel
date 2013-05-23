@@ -7,10 +7,13 @@
 *.cmake
 *.xml
 
+# Directories
 CMakeFiles/
+
 # Executables
 slic
 svmtrain
+slicsvmvalidator
 
 # Specific files
 CMakeCache.txt

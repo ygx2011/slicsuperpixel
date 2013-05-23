@@ -102,6 +102,8 @@ int main(int argc, char **argv)
 
   waitKey(0);
 
+  imwrite("results.jpg", contours);
+
   return 0;
 }
 
