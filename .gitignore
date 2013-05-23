@@ -1,7 +1,16 @@
-# Ignore object files
+# Filetypes
 *.o
-slic
 *.jpg
 *.swp
 *.dat
 *.csv
+*.cmake
+*.xml
+
+CMakeFiles/
+# Executables
+slic
+svmtrain
+
+# Specific files
+CMakeCache.txt
