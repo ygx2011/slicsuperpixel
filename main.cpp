@@ -10,8 +10,6 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/nonfree/features2d.hpp>
 
-#include "timer.cpp"
-
 using namespace cv;
 using namespace std;
 
@@ -62,16 +60,8 @@ int main(int argc, char **argv)
     exit(-1);
   }
 
-  // Timer for benchmarking
-  Timer tm;
-
   cout << "Initializing..." << endl;
-  tm.start();
   s = new Slic(original_image, k , m);
-  tm.stop();
-
-  cout << "Initialization time: " << tm.duration();
-  cout << endl;
 
   cout << "Resolution: " << s->getWidth() << " x " << s->getHeight() << endl;
   cout << "Num superpixels: " << s->getSuperpixels().size() << endl;
@@ -83,10 +73,8 @@ int main(int argc, char **argv)
   float e = 1000000;
   while(e > threshold)
   {
-    tm.start();
     e = s->iterate();
-    tm.stop();
-    cout << "Error: " << e << ", Duration: " << tm.duration() << endl;
+    cout << "Error: " << e << endl;
     // printf("Residual error: %f, Duration: %d", e, tm.duration());
   }
 
