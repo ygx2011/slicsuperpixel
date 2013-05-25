@@ -98,7 +98,11 @@ int main(int argc, char **argv)
   imwrite("contours.jpg", contours);
 
   cout << "Press any key to continue..." << endl;
-  waitKey(0);
+  int key = waitKey(-1);
+  while(key != 27)
+  {
+    key = waitKey(-1);
+  }
 
   data_file.close();
 
@@ -170,7 +174,11 @@ void mouse_event(int e, int x, int y, int flags, void *param)
       data_file << descriptors.at<float>(l, i) << ",";
     }
 
-    data_file << label << "\n";
+    cout << "Ground truth:";
+    int temp_label;
+    cin >> temp_label;
+
+    data_file << temp_label << "\n";
   }
 }
 
