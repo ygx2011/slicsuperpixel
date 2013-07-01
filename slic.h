@@ -53,6 +53,9 @@ namespace cv
     Mat getSIFTDescriptors();
     Mat getSurfDescriptors();
     Mat getOrbDescriptors();
+    
+    int superpixelRowCount;
+    int superpixelColCount;
 
   private:
     int width;
@@ -64,8 +67,6 @@ namespace cv
     Mat labImage;
     vector<superpixel> superpixels;
     int k;
-    int superpixelRowCount;
-    int superpixelColCount;
 
     void init(Mat originalImage, int s, float m);
     Mat convertToGradient(Mat originalImage);

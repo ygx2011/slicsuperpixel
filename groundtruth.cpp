@@ -37,7 +37,7 @@ Mat edge_result(Slic *s);
 
 int main(int argc, char **argv)
 {
-  if(argc != 7)
+  if(argc != 6)
   {
     syntax();
     exit(-1);
@@ -50,7 +50,6 @@ int main(int argc, char **argv)
   float m = atof(argv[3]);
   float threshold = atof(argv[4]);
   string filename = argv[5];
-  label = atoi(argv[6]);
   
   // Data file for writing
   data_file.open(filename.c_str());
@@ -94,11 +93,38 @@ int main(int argc, char **argv)
   // Show contours
   namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
   imshow( "Contours", contours );
-  setMouseCallback("Contours", mouse_event, 0);
   imwrite("contours.jpg", contours);
 
   cout << "Press any key to continue..." << endl;
   int key = waitKey(-1);
+
+  for(int i = 0; i < superpixels.size(); i++)
+  {
+    vector<Point> points = superpixels.at(i).points;
+
+    cout << "Label for SP " << i << ": ";
+    cin >> label;
+
+    if(label == 0)
+    {
+      for(int j = 0; j < points.size(); j++)
+      {
+        contours.at<Vec3b>(points.at(i).y, points.at(i).x)[2] = 255;
+      }
+    }
+    else if(label == 1)
+    {
+      for(int j = 0; j < points.size(); j++)
+      {
+        contours.at<Vec3b>(points.at(i).y, points.at(i).x)[0] = 255;
+      }
+    }
+
+    imshow("Contours", contours);
+  }
+
+  cout << "Press ESC to exit..." << endl;
+
   while(key != 27)
   {
     key = waitKey(-1);
@@ -159,30 +185,37 @@ void mouse_event(int e, int x, int y, int flags, void *param)
 {
   if(e == CV_EVENT_LBUTTONDOWN)
   {
+    cout << "Ground truth:";
+    cin >> label;
+
+    data_file << label << "\n";
+    
     int l = labels.at<int>(y, x);
-    vector<Point> points = s->getSuperpixels().at(l).points;
-    for(int i = 0; i < points.size(); i++)
-    {
-      contours.at<Vec3b>(points.at(i).y, points.at(i).x)[0] = 255;
-    }
-
-    imshow("Contours", contours);
-
+    
     // Print out descriptors
     for(int i = 0; i < descriptors.cols; i++)
     {
       data_file << descriptors.at<float>(l, i) << ",";
     }
+    
+    vector<Point> points = s->getSuperpixels().at(l).points;
+    for(int i = 0; i < points.size(); i++)
+    {
+      if(label == 1)
+      {
+        contours.at<Vec3b>(points.at(i).y, points.at(i).x)[0] = 255;
+      }
+      else
+      {
+        contours.at<Vec3b>(points.at(i).y, points.at(i).x)[2] = 255;
+      }
+    }
 
-    cout << "Ground truth:";
-    int temp_label;
-    cin >> temp_label;
-
-    data_file << temp_label << "\n";
+    imshow("Contours", contours);
   }
 }
 
 void syntax()
 {
-  cout << "Syntax: slic [image_file] [super_pixel_size] [m] [threshold] [data_file] [label]" << endl;
+  cout << "Syntax: groundtruth [image_file] [super_pixel_size] [m] [threshold] [data_file]" << endl;
 }

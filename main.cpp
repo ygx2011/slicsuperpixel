@@ -19,6 +19,8 @@ Slic *s;
 
 Mat contours;
 
+Mat edges;
+
 Mat labels;
 
 Mat descriptors;
@@ -34,6 +36,8 @@ void mouse_event(int e, int x, int y, int flags, void *param);
 Scalar white(255, 255, 255);
 
 Mat edge_result(Slic *s);
+
+void mark_current(int current_id);
 
 int main(int argc, char **argv)
 {
@@ -78,6 +82,7 @@ int main(int argc, char **argv)
   }
 
   contours = edge_result(s);
+  contours.copyTo(edges);
   labels = Mat_<int>(contours.rows, contours.cols);
   vector<superpixel> superpixels = s->getSuperpixels();
   for(int i = 0; i < superpixels.size(); i++)
@@ -98,11 +103,65 @@ int main(int argc, char **argv)
   imwrite("contours.jpg", contours);
 
   cout << "Press any key to continue..." << endl;
-  waitKey(0);
+  int key;
+  int current_id = 0;
+
+  while(key = waitKey(100), key != 27)
+  {
+    switch(key)
+    {
+      case 65362:
+        if(current_id - s->superpixelColCount >= 0 && current_id - s->superpixelColCount < superpixels.size())
+        {
+          current_id = current_id - s->superpixelColCount;
+          mark_current(current_id);
+        }
+        break;
+      case 65361:
+        if(current_id - 1 >= 0 && current_id - 1 < superpixels.size())
+        {
+          current_id = current_id - 1;
+          mark_current(current_id);
+        }
+        break;
+      case 65364:
+        if(current_id + s->superpixelColCount >= 0 && current_id + s->superpixelColCount < superpixels.size())
+        {
+          current_id = current_id + s->superpixelColCount;
+          mark_current(current_id);
+        }
+        break; 
+      case 65363:
+        if(current_id + 1 >= 0 && current_id + 1 < superpixels.size())
+        {
+          current_id = current_id + 1;
+          mark_current(current_id);
+        }
+        break;
+      default:
+        printf("%d\n", key);
+        break;
+    }
+  }
 
   data_file.close();
 
   return 0;
+}
+
+void mark_current(int current_id)
+{
+  if(current_id >= 0)
+  {
+    edges.copyTo(contours);
+    vector<Point> points = s->getSuperpixels().at(current_id).points;
+    for(int i = 0; i < points.size(); i++)
+    {
+      contours.at<Vec3b>(points.at(i).y, points.at(i).x)[2] = 255;
+    }
+
+    imshow("Contours", contours);
+  }
 }
 
 Mat edge_result(Slic *s)
