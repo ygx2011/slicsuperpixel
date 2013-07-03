@@ -99,19 +99,6 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named groundtruth
-
-# Build rule for target.
-groundtruth: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 groundtruth
-.PHONY : groundtruth
-
-# fast build rule for target.
-groundtruth/fast:
-	$(MAKE) -f CMakeFiles/groundtruth.dir/build.make CMakeFiles/groundtruth.dir/build
-.PHONY : groundtruth/fast
-
-#=============================================================================
 # Target rules for targets named slic
 
 # Build rule for target.
@@ -150,30 +137,6 @@ svmtrain/fast:
 	$(MAKE) -f CMakeFiles/svmtrain.dir/build.make CMakeFiles/svmtrain.dir/build
 .PHONY : svmtrain/fast
 
-groundtruth.o: groundtruth.cpp.o
-.PHONY : groundtruth.o
-
-# target to build an object file
-groundtruth.cpp.o:
-	$(MAKE) -f CMakeFiles/groundtruth.dir/build.make CMakeFiles/groundtruth.dir/groundtruth.cpp.o
-.PHONY : groundtruth.cpp.o
-
-groundtruth.i: groundtruth.cpp.i
-.PHONY : groundtruth.i
-
-# target to preprocess a source file
-groundtruth.cpp.i:
-	$(MAKE) -f CMakeFiles/groundtruth.dir/build.make CMakeFiles/groundtruth.dir/groundtruth.cpp.i
-.PHONY : groundtruth.cpp.i
-
-groundtruth.s: groundtruth.cpp.s
-.PHONY : groundtruth.s
-
-# target to generate assembly for a file
-groundtruth.cpp.s:
-	$(MAKE) -f CMakeFiles/groundtruth.dir/build.make CMakeFiles/groundtruth.dir/groundtruth.cpp.s
-.PHONY : groundtruth.cpp.s
-
 main.o: main.cpp.o
 .PHONY : main.o
 
@@ -203,7 +166,6 @@ slic.o: slic.cpp.o
 
 # target to build an object file
 slic.cpp.o:
-	$(MAKE) -f CMakeFiles/groundtruth.dir/build.make CMakeFiles/groundtruth.dir/slic.cpp.o
 	$(MAKE) -f CMakeFiles/slic.dir/build.make CMakeFiles/slic.dir/slic.cpp.o
 	$(MAKE) -f CMakeFiles/slicsvmvalidator.dir/build.make CMakeFiles/slicsvmvalidator.dir/slic.cpp.o
 .PHONY : slic.cpp.o
@@ -213,7 +175,6 @@ slic.i: slic.cpp.i
 
 # target to preprocess a source file
 slic.cpp.i:
-	$(MAKE) -f CMakeFiles/groundtruth.dir/build.make CMakeFiles/groundtruth.dir/slic.cpp.i
 	$(MAKE) -f CMakeFiles/slic.dir/build.make CMakeFiles/slic.dir/slic.cpp.i
 	$(MAKE) -f CMakeFiles/slicsvmvalidator.dir/build.make CMakeFiles/slicsvmvalidator.dir/slic.cpp.i
 .PHONY : slic.cpp.i
@@ -223,7 +184,6 @@ slic.s: slic.cpp.s
 
 # target to generate assembly for a file
 slic.cpp.s:
-	$(MAKE) -f CMakeFiles/groundtruth.dir/build.make CMakeFiles/groundtruth.dir/slic.cpp.s
 	$(MAKE) -f CMakeFiles/slic.dir/build.make CMakeFiles/slic.dir/slic.cpp.s
 	$(MAKE) -f CMakeFiles/slicsvmvalidator.dir/build.make CMakeFiles/slicsvmvalidator.dir/slic.cpp.s
 .PHONY : slic.cpp.s
@@ -281,7 +241,6 @@ timer.o: timer.cpp.o
 
 # target to build an object file
 timer.cpp.o:
-	$(MAKE) -f CMakeFiles/groundtruth.dir/build.make CMakeFiles/groundtruth.dir/timer.cpp.o
 	$(MAKE) -f CMakeFiles/slic.dir/build.make CMakeFiles/slic.dir/timer.cpp.o
 	$(MAKE) -f CMakeFiles/slicsvmvalidator.dir/build.make CMakeFiles/slicsvmvalidator.dir/timer.cpp.o
 .PHONY : timer.cpp.o
@@ -291,7 +250,6 @@ timer.i: timer.cpp.i
 
 # target to preprocess a source file
 timer.cpp.i:
-	$(MAKE) -f CMakeFiles/groundtruth.dir/build.make CMakeFiles/groundtruth.dir/timer.cpp.i
 	$(MAKE) -f CMakeFiles/slic.dir/build.make CMakeFiles/slic.dir/timer.cpp.i
 	$(MAKE) -f CMakeFiles/slicsvmvalidator.dir/build.make CMakeFiles/slicsvmvalidator.dir/timer.cpp.i
 .PHONY : timer.cpp.i
@@ -301,7 +259,6 @@ timer.s: timer.cpp.s
 
 # target to generate assembly for a file
 timer.cpp.s:
-	$(MAKE) -f CMakeFiles/groundtruth.dir/build.make CMakeFiles/groundtruth.dir/timer.cpp.s
 	$(MAKE) -f CMakeFiles/slic.dir/build.make CMakeFiles/slic.dir/timer.cpp.s
 	$(MAKE) -f CMakeFiles/slicsvmvalidator.dir/build.make CMakeFiles/slicsvmvalidator.dir/timer.cpp.s
 .PHONY : timer.cpp.s
@@ -313,14 +270,10 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... edit_cache"
-	@echo "... groundtruth"
 	@echo "... rebuild_cache"
 	@echo "... slic"
 	@echo "... slicsvmvalidator"
 	@echo "... svmtrain"
-	@echo "... groundtruth.o"
-	@echo "... groundtruth.i"
-	@echo "... groundtruth.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"

@@ -31,9 +31,15 @@ int label;
 
 int feature_set;
 
-void syntax();
+int mode;
 
-void mouse_event(int e, int x, int y, int flags, void *param);
+int key;
+
+int current_id = 0;
+
+vector<superpixel> superpixels;
+
+void syntax();
 
 Scalar white(255, 255, 255);
 
@@ -45,7 +51,15 @@ void mark_labelled(int id);
 
 int get_descriptor_type();
 
+int get_mode();
+
 void write_row_descriptors(int id, int label);
+
+void write_row_groundtruth(int id, int label);
+
+void generate_labels();
+
+void generate_groundtruth();
 
 int main(int argc, char **argv)
 {
@@ -80,11 +94,8 @@ int main(int argc, char **argv)
   cout << "m: " << s->getM() << endl;
   cout << endl;
 
-  feature_set = get_descriptor_type();
-
-  // Descriptors
-  printf("Using feature set %d\n", feature_set);
-  descriptors = s->getDescriptors(feature_set);
+  // Option: label generation or groundtruth
+  mode = get_mode();
 
   // iterate
   printf("Producing superpixels...\n");
@@ -95,10 +106,19 @@ int main(int argc, char **argv)
     cout << "Error: " << e << endl;
   }
 
+  if(mode == 1)
+  {
+    feature_set = get_descriptor_type();
+
+    // Descriptors
+    printf("Using feature set %d\n", feature_set);
+    descriptors = s->getDescriptors(feature_set);
+  }
+
   contours = edge_result(s);
   contours.copyTo(edges);
   labels = Mat_<int>(contours.rows, contours.cols);
-  vector<superpixel> superpixels = s->getSuperpixels();
+  superpixels = s->getSuperpixels();
   for(int i = 0; i < superpixels.size(); i++)
   {
     for(int j = 0; j < superpixels.at(i).points.size(); j++)
@@ -110,14 +130,31 @@ int main(int argc, char **argv)
   // Show contours
   namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
   imshow( "Contours", contours );
-  setMouseCallback("Contours", mouse_event, 0);
   imwrite("contours.jpg", contours);
 
   cout << "Press any key to continue..." << endl;
-  int key;
-  int current_id = 0;
   mark_current(current_id);
 
+  if(mode == 1)
+  {
+    printf("Generating labels...\n");
+    generate_labels();
+  }
+  else if(mode == 2)
+  {
+    printf("Generating groundtruth...\n");
+    generate_groundtruth();
+  }
+
+  printf("Closing file...\n");
+  data_file.close();
+
+  printf("Program terminating...\n");
+  return 0;
+}
+
+void generate_labels()
+{
   while(key = waitKey(100), key != 27)
   {
     switch(key)
@@ -205,10 +242,97 @@ int main(int argc, char **argv)
         break;
     }
   }
+}
 
-  data_file.close();
-
-  return 0;
+void generate_groundtruth()
+{
+  while(key = waitKey(100), key != 27)
+  {
+    switch(key)
+    {
+      case 65362:
+        if(current_id - s->superpixelColCount >= 0 && current_id - s->superpixelColCount < superpixels.size())
+        {
+          current_id = current_id - s->superpixelColCount;
+          mark_current(current_id);
+        }
+        break;
+      case 65361:
+        if(current_id - 1 >= 0 && current_id - 1 < superpixels.size())
+        {
+          current_id = current_id - 1;
+          mark_current(current_id);
+        }
+        break;
+      case 65364:
+        if(current_id + s->superpixelColCount >= 0 && current_id + s->superpixelColCount < superpixels.size())
+        {
+          current_id = current_id + s->superpixelColCount;
+          mark_current(current_id);
+        }
+        break; 
+      case 65363:
+        if(current_id + 1 >= 0 && current_id + 1 < superpixels.size())
+        {
+          current_id = current_id + 1;
+          mark_current(current_id);
+        }
+        break;
+      case 48:
+        label = 0;
+        mark_labelled(current_id);
+        write_row_groundtruth(current_id, label);
+        break;
+      case 49:
+        label = 1;
+        mark_labelled(current_id);
+        write_row_groundtruth(current_id, label);
+        break;
+      case 50:
+        label = 2;
+        mark_labelled(current_id);
+        write_row_groundtruth(current_id, label);
+        break;
+      case 51:
+        label = 3;
+        mark_labelled(current_id);
+        write_row_groundtruth(current_id, label);
+        break;
+      case 52:
+        label = 4;
+        mark_labelled(current_id);
+        write_row_groundtruth(current_id, label);
+        break;
+      case 53:
+        label = 5;
+        mark_labelled(current_id);
+        write_row_groundtruth(current_id, label);
+        break;
+      case 54:
+        label = 6;
+        mark_labelled(current_id);
+        write_row_groundtruth(current_id, label);
+        break;
+      case 55:
+        label = 7;
+        mark_labelled(current_id);
+        write_row_groundtruth(current_id, label);
+        break;
+      case 56:
+        label = 8;
+        mark_labelled(current_id);
+        write_row_groundtruth(current_id, label);
+        break;
+      case 57:
+        label = 9;
+        mark_labelled(current_id);
+        write_row_groundtruth(current_id, label);
+        break;
+      default:
+        //printf("Unregistered key: %d\n", key);
+        break;
+    }
+  }
 }
 
 void mark_current(int current_id)
@@ -284,34 +408,11 @@ Mat edge_result(Slic *s)
   return edges;
 }
 
-void mouse_event(int e, int x, int y, int flags, void *param)
-{
-  if(e == CV_EVENT_LBUTTONDOWN)
-  {
-    int l = labels.at<int>(y, x);
-    vector<Point> points = s->getSuperpixels().at(l).points;
-    for(int i = 0; i < points.size(); i++)
-    {
-      contours.at<Vec3b>(points.at(i).y, points.at(i).x)[0] = 255;
-    }
-
-    imshow("Contours", contours);
-
-    // Print out descriptors
-    for(int i = 0; i < descriptors.cols; i++)
-    {
-      data_file << descriptors.at<float>(l, i) << ",";
-    }
-
-    data_file << label << "\n";
-  }
-}
-
 int get_descriptor_type()
 {
   int desc_type;
 
-  printf("Possible descriptors:\n");
+  printf("Available descriptors:\n");
   printf("-- MID SIFT (1)\n");
   printf("-- MID SURF (2)\n");
   printf("-- MID ORB (3)\n");
@@ -333,10 +434,33 @@ int get_descriptor_type()
   }
 }
 
+int get_mode()
+{
+  int mode;
+
+  printf("Available modes:\n");
+  printf("-- Label Generation (1)\n");
+  printf("-- Groundtruth (2)\n");
+
+  cout << "Enter number: ";
+
+  cin >> mode;
+
+  if(mode != 1 && mode != 2)
+  {
+    printf("Invalid mode.\n");
+    return get_mode();
+  }
+  else
+  {
+    return mode;
+  }
+}
+
 void write_row_descriptors(int id, int label)
 {
   // Print out descriptors
-  cout << "[DEBUG] Data row: ";
+  cout << "[DEBUG] Features: ";
   for(int i = 0; i < descriptors.cols; i++)
   {
     cout << descriptors.at<float>(id, i) << ",";
@@ -345,6 +469,13 @@ void write_row_descriptors(int id, int label)
 
   cout << label << endl;
   data_file << label << "\n";
+}
+
+void write_row_groundtruth(int id, int label)
+{
+  cout << "[DEBUG] Ground truth: ";
+  cout << id << "," << label << "\n";
+  data_file << id << "," << label << "\n";
 }
 
 void syntax()
