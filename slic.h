@@ -16,6 +16,10 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/nonfree/features2d.hpp>
 
+#define DESC_MID_SIFT 1
+#define DESC_MID_SURF 2
+#define DESC_MID_ORB 3
+
 using namespace std;
 using namespace cv;
 
@@ -50,6 +54,7 @@ namespace cv
     Slic(Mat originalImage, int s, float m);
     virtual ~Slic();
 
+    Mat getDescriptors(int desc_type);
     Mat getSIFTDescriptors();
     Mat getSurfDescriptors();
     Mat getOrbDescriptors();

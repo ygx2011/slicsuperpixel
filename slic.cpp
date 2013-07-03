@@ -370,6 +370,26 @@ vector<float> Slic::getLabxy(Mat lab, Point c)
   return ret;
 }
 
+Mat Slic::getDescriptors(int desc_type)
+{
+  if(desc_type == DESC_MID_SIFT)
+  {
+    return getSIFTDescriptors();
+  }
+  else if(desc_type == DESC_MID_SURF)
+  {
+    return getSurfDescriptors();
+  }
+  else if(desc_type == DESC_MID_ORB)
+  {
+    return getOrbDescriptors();
+  }
+  else
+  {
+    return getSIFTDescriptors();
+  }
+}
+
 Mat Slic::getSIFTDescriptors()
 {
   Mat descriptors;

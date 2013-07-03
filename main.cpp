@@ -29,6 +29,8 @@ ofstream data_file;
 
 int label;
 
+int feature_set;
+
 void syntax();
 
 void mouse_event(int e, int x, int y, int flags, void *param);
@@ -39,9 +41,15 @@ Mat edge_result(Slic *s);
 
 void mark_current(int current_id);
 
+void mark_labelled(int id);
+
+int get_descriptor_type();
+
+void write_row_descriptors(int id, int label);
+
 int main(int argc, char **argv)
 {
-  if(argc != 7)
+  if(argc != 6)
   {
     syntax();
     exit(-1);
@@ -54,7 +62,6 @@ int main(int argc, char **argv)
   float m = atof(argv[3]);
   float threshold = atof(argv[4]);
   string filename = argv[5];
-  label = atoi(argv[6]);
   
   // Data file for writing
   data_file.open(filename.c_str());
@@ -73,7 +80,14 @@ int main(int argc, char **argv)
   cout << "m: " << s->getM() << endl;
   cout << endl;
 
+  feature_set = get_descriptor_type();
+
+  // Descriptors
+  printf("Using feature set %d\n", feature_set);
+  descriptors = s->getDescriptors(feature_set);
+
   // iterate
+  printf("Producing superpixels...\n");
   float e = 1000000;
   while(e > threshold)
   {
@@ -93,9 +107,6 @@ int main(int argc, char **argv)
     }
   }
 
-  // Descriptors
-  descriptors = s->getSIFTDescriptors();
-
   // Show contours
   namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
   imshow( "Contours", contours );
@@ -105,6 +116,7 @@ int main(int argc, char **argv)
   cout << "Press any key to continue..." << endl;
   int key;
   int current_id = 0;
+  mark_current(current_id);
 
   while(key = waitKey(100), key != 27)
   {
@@ -138,8 +150,58 @@ int main(int argc, char **argv)
           mark_current(current_id);
         }
         break;
+      case 48:
+        label = 0;
+        mark_labelled(current_id);
+        write_row_descriptors(current_id, label);
+        break;
+      case 49:
+        label = 1;
+        mark_labelled(current_id);
+        write_row_descriptors(current_id, label);
+        break;
+      case 50:
+        label = 2;
+        mark_labelled(current_id);
+        write_row_descriptors(current_id, label);
+        break;
+      case 51:
+        label = 3;
+        mark_labelled(current_id);
+        write_row_descriptors(current_id, label);
+        break;
+      case 52:
+        label = 4;
+        mark_labelled(current_id);
+        write_row_descriptors(current_id, label);
+        break;
+      case 53:
+        label = 5;
+        mark_labelled(current_id);
+        write_row_descriptors(current_id, label);
+        break;
+      case 54:
+        label = 6;
+        mark_labelled(current_id);
+        write_row_descriptors(current_id, label);
+        break;
+      case 55:
+        label = 7;
+        mark_labelled(current_id);
+        write_row_descriptors(current_id, label);
+        break;
+      case 56:
+        label = 8;
+        mark_labelled(current_id);
+        write_row_descriptors(current_id, label);
+        break;
+      case 57:
+        label = 9;
+        mark_labelled(current_id);
+        write_row_descriptors(current_id, label);
+        break;
       default:
-        printf("%d\n", key);
+        //printf("Unregistered key: %d\n", key);
         break;
     }
   }
@@ -161,6 +223,18 @@ void mark_current(int current_id)
     }
 
     imshow("Contours", contours);
+  }
+}
+
+void mark_labelled(int id)
+{
+  if(id >= 0)
+  {
+    vector<Point> points = s->getSuperpixels().at(id).points;
+    for(int i = 0; i < points.size(); i++)
+    {
+      edges.at<Vec3b>(points.at(i).y, points.at(i).x)[0] = 255;
+    }
   }
 }
 
@@ -233,7 +307,47 @@ void mouse_event(int e, int x, int y, int flags, void *param)
   }
 }
 
+int get_descriptor_type()
+{
+  int desc_type;
+
+  printf("Possible descriptors:\n");
+  printf("-- MID SIFT (1)\n");
+  printf("-- MID SURF (2)\n");
+  printf("-- MID ORB (3)\n");
+
+  cout << "Enter number: ";
+
+  cin >> desc_type;
+
+  if(desc_type != DESC_MID_SIFT &&
+      desc_type != DESC_MID_SURF &&
+      desc_type != DESC_MID_ORB)
+  {
+    printf("Invalid descriptor set.\n");
+    return get_descriptor_type();
+  }
+  else
+  {
+    return desc_type;
+  }
+}
+
+void write_row_descriptors(int id, int label)
+{
+  // Print out descriptors
+  cout << "[DEBUG] Data row: ";
+  for(int i = 0; i < descriptors.cols; i++)
+  {
+    cout << descriptors.at<float>(id, i) << ",";
+    data_file << descriptors.at<float>(id, i) << ",";
+  }
+
+  cout << label << endl;
+  data_file << label << "\n";
+}
+
 void syntax()
 {
-  cout << "Syntax: slic [image_file] [super_pixel_size] [m] [threshold] [data_file] [label]" << endl;
+  cout << "Syntax: slic [image_file] [super_pixel_size] [m] [threshold] [data_file]" << endl;
 }
