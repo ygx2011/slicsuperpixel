@@ -47,7 +47,7 @@ Mat edge_result(Slic *s);
 
 void mark_current(int current_id);
 
-void mark_labelled(int id);
+void mark_labelled(int id, int key_press);
 
 int get_descriptor_type();
 
@@ -189,52 +189,52 @@ void generate_labels()
         break;
       case 48:
         label = 0;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_descriptors(current_id, label);
         break;
       case 49:
         label = 1;
-        mark_labelled(current_id);
+        mark_labelled(current_id, 1);
         write_row_descriptors(current_id, label);
         break;
       case 50:
         label = 2;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_descriptors(current_id, label);
         break;
       case 51:
         label = 3;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_descriptors(current_id, label);
         break;
       case 52:
         label = 4;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_descriptors(current_id, label);
         break;
       case 53:
         label = 5;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_descriptors(current_id, label);
         break;
       case 54:
         label = 6;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_descriptors(current_id, label);
         break;
       case 55:
         label = 7;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_descriptors(current_id, label);
         break;
       case 56:
         label = 8;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_descriptors(current_id, label);
         break;
       case 57:
         label = 9;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_descriptors(current_id, label);
         break;
       default:
@@ -280,52 +280,52 @@ void generate_groundtruth()
         break;
       case 48:
         label = 0;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_groundtruth(current_id, label);
         break;
       case 49:
         label = 1;
-        mark_labelled(current_id);
+        mark_labelled(current_id, 1);
         write_row_groundtruth(current_id, label);
         break;
       case 50:
         label = 2;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_groundtruth(current_id, label);
         break;
       case 51:
         label = 3;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_groundtruth(current_id, label);
         break;
       case 52:
         label = 4;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_groundtruth(current_id, label);
         break;
       case 53:
         label = 5;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_groundtruth(current_id, label);
         break;
       case 54:
         label = 6;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_groundtruth(current_id, label);
         break;
       case 55:
         label = 7;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_groundtruth(current_id, label);
         break;
       case 56:
         label = 8;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_groundtruth(current_id, label);
         break;
       case 57:
         label = 9;
-        mark_labelled(current_id);
+        mark_labelled(current_id, -1);
         write_row_groundtruth(current_id, label);
         break;
       default:
@@ -343,21 +343,28 @@ void mark_current(int current_id)
     vector<Point> points = s->getSuperpixels().at(current_id).points;
     for(int i = 0; i < points.size(); i++)
     {
-      contours.at<Vec3b>(points.at(i).y, points.at(i).x)[2] = 255;
+      contours.at<Vec3b>(points.at(i).y, points.at(i).x)[1] = 255;
     }
 
     imshow("Contours", contours);
   }
 }
 
-void mark_labelled(int id)
+void mark_labelled(int id, int key_press)
 {
   if(id >= 0)
   {
     vector<Point> points = s->getSuperpixels().at(id).points;
     for(int i = 0; i < points.size(); i++)
     {
-      edges.at<Vec3b>(points.at(i).y, points.at(i).x)[0] = 255;
+      if(key_press == 1)
+      {
+        edges.at<Vec3b>(points.at(i).y, points.at(i).x)[0] = 255;
+      }
+      else
+      {
+        edges.at<Vec3b>(points.at(i).y, points.at(i).x)[2] = 255;
+      }
     }
   }
 }
