@@ -25,7 +25,7 @@ Scalar white = Scalar(255, 255, 255);
 
 int main(int argc, char **argv)
 {
-  if(argc != 6)
+  if(argc != 7)
   {
     syntax();
     exit(-1);
@@ -36,6 +36,15 @@ int main(int argc, char **argv)
   float m = atof(argv[3]);
   float threshold = atof(argv[4]);
   string svm_model_file = argv[5];
+  string output_file_ref = argv[6];
+  ofstream output_file;
+  // Data file for writing
+  output_file.open(output_file_ref.c_str());
+  if(!output_file.is_open())
+  {
+    cout << "Error in opening file " << output_file_ref << endl;
+    exit(-1);
+  }
 
   // Timer for benchmarking
   Timer tm;
@@ -81,6 +90,7 @@ int main(int argc, char **argv)
     }
 
     float prediction = svm.predict(sample);
+    output_file << i << "," << prediction << "\n";
     vector<Point> points = superpixels.at(i).points;
     for(int j = 0; j < points.size(); j++)
     {
@@ -95,6 +105,9 @@ int main(int argc, char **argv)
       }
     }
   }
+
+  printf("Closing output file...\n");
+  output_file.close();
 
   // Show contours
   namedWindow( "Results", CV_WINDOW_AUTOSIZE );
@@ -155,5 +168,5 @@ Mat edge_result(Slic *s)
 
 void syntax()
 {
-  cout << "Syntax: svmslicvalidator [image_file] [s] [m] [threshold] [model_file]" << endl;
+  cout << "Syntax: svmslicvalidator [image_file] [s] [m] [threshold] [model_file] [output_file]" << endl;
 }
